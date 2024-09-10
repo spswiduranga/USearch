@@ -1,0 +1,185 @@
+Console.WriteLine("Usearch");
+
+//try
+//{
+//    // Load and preprocess the image
+//    string imagePath = "D:\\Test\\USearch\\ConsoleApp1\\testphoto.jpg"; // Ensure this path is correct
+//    if (!File.Exists(imagePath))
+//    {
+//        Console.WriteLine("Error: Image file does not exist.");
+//        return;
+//    }
+
+//    using Bitmap bitmap = new Bitmap(imagePath);
+//    float[] vector = ExtractImageFeatures(bitmap);
+
+//    // Create and use the USearchIndex
+//    using var index = new USearchIndex(
+//        metricKind: MetricKind.Cos,
+//        quantization: ScalarKind.Float32,
+//        dimensions: ulong.Parse(vector.Length.ToString()),
+//        connectivity: 16,
+//        expansionAdd: 128,
+//        expansionSearch: 64
+//    );
+
+//    index.Add((ulong)42, vector);
+
+//    int matches = index.Search(vector, 10, out ulong[] keys, out float[] distances);
+
+//    Trace.Assert(index.Size() == 1);
+//    Trace.Assert(matches == 1);
+//    Trace.Assert(keys[0] == 42);
+//    Trace.Assert(distances[0] <= 0.001f);
+//}
+//catch (ArgumentException ex)
+//{
+//    Console.WriteLine("An error occurred while loading the image: " + ex.Message);
+//}
+//catch (Exception ex)
+//{
+//    Console.WriteLine("An unexpected error occurred: " + ex.Message);
+//}
+
+//static float[] ExtractImageFeatures(Bitmap bitmap)
+//{
+//    int width = bitmap.Width;
+//    int height = bitmap.Height;
+//    int dimension = width * height * 3; // Assuming RGB image
+//    float[] vector = new float[dimension];
+
+//    int index = 0;
+//    for (int y = 0; y < height; y++)
+//    {
+//        for (int x = 0; x < width; x++)
+//        {
+//            Color pixel = bitmap.GetPixel(x, y);
+//            vector[index++] = pixel.R / 255f;
+//            vector[index++] = pixel.G / 255f;
+//            vector[index++] = pixel.B / 255f;
+//        }
+//    }
+
+//    return vector;
+//}
+
+
+try
+{
+    Stopwatch stopwatch = new Stopwatch();
+    stopwatch.Start();
+    // Load and preprocess the first image
+    string imagePath1 = "D:\\Test\\USearch\\ConsoleApp1\\testphoto.jpg";
+    if (!File.Exists(imagePath1))
+    {
+        Console.WriteLine("Error: First image file does not exist.");
+        return;
+    }
+    using Bitmap bitmap1 = new Bitmap(imagePath1);
+    using Bitmap resizedBitmap1 = ResizeImage(bitmap1, 100, 100);
+    float[] vector1 = ExtractImageFeatures(resizedBitmap1);
+
+
+
+
+   
+    //// Ensure the vectors have the same length
+    //if (vector1.Length != vector2.Length)
+    //{
+    //    Console.WriteLine("Error: The feature vectors of the two images have different lengths.");
+    //    return;
+    //}
+
+    // Create and use the USearchIndex
+    using var index = new USearchIndex(
+        metricKind: MetricKind.Cos,
+        quantization: ScalarKind.Float32,
+        dimensions: ulong.Parse(vector1.Length.ToString()), // Pass the length as an int
+        connectivity: 16,
+        expansionAdd: 128,
+        expansionSearch: 64
+    );
+
+    // Add the first image's vector to the index
+    index.Add((ulong)1, vector1);
+
+
+    float[] vector2 = LoadVectors();
+
+
+
+    // Search for the closest match using the second image's vector
+    int matches = index.Search(vector2, 1, out ulong[] keys, out float[] distances);
+
+    // Check if the images match
+    if (matches > 0 && distances[0] <= 0.001f)
+    {
+        Console.WriteLine("The images are similar.");
+    }
+    else
+    {
+        Console.WriteLine("The images are different.");
+    }
+
+    Trace.Assert(index.Size() == 1);
+    stopwatch.Stop();
+    Console.WriteLine($"Time to process first image: {stopwatch.ElapsedMilliseconds} ms");
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine("An error occurred while loading the image: " + ex.Message);
+}
+catch (Exception ex)
+{
+    Console.WriteLine("An unexpected error occurred: " + ex.Message);
+}
+
+static float[] ExtractImageFeatures(Bitmap bitmap)
+{
+    int width = bitmap.Width;
+    int height = bitmap.Height;
+    int dimension = width * height * 3; // Assuming RGB image
+    float[] vector = new float[dimension];
+
+    int index = 0;
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            Color pixel = bitmap.GetPixel(x, y);
+            vector[index++] = pixel.R / 255f;
+            vector[index++] = pixel.G / 255f;
+            vector[index++] = pixel.B / 255f;
+        }
+    }
+
+    return vector;
+}
+
+
+static Bitmap ResizeImage(Bitmap originalImage, int width, int height)
+{
+    Bitmap resizedImage = new Bitmap(width, height);
+    using (Graphics graphics = Graphics.FromImage(resizedImage))
+    {
+        graphics.DrawImage(originalImage, 0, 0, width, height);
+    }
+    return resizedImage;
+}
+
+
+
+static float[] LoadVectors()
+{
+    string imagePath2 = "D:\\Test\\USearch\\ConsoleApp1\\image.jpg";
+
+    if (!File.Exists(imagePath2))
+    {
+        Console.WriteLine("Error: Second image file does not exist.");
+        //return false;
+    }
+    using Bitmap bitmap2 = new Bitmap(imagePath2);
+    using Bitmap resizedBitmap2 = ResizeImage(bitmap2, 100, 100);
+    float[] vector2 = ExtractImageFeatures(resizedBitmap2);
+    return vector2;
+}
